@@ -10,8 +10,7 @@ import {
   updateGridCellState,
 } from '../utils'
 
-const AppStateContext = React.createContext();
-const AppDispatchContext = React.createContext();
+const AppStateContext = React.createContext()
 
 const initialGrid = Array.from({length: 100}, () =>
   Array.from({length: 100}, () => Math.random() * 100),
@@ -42,10 +41,8 @@ function AppProvider({children}) {
   // 🐨 memoize this value with React.useMemo
   const value = React.useMemo(() => [state, dispatch], [state, dispatch]);
   return (
-    <AppStateContext.Provider value={state}>
-      <AppDispatchContext.Provider value={dispatch}>
-        {children}
-      </AppDispatchContext.Provider>
+    <AppStateContext.Provider value={value}>
+      {children}
     </AppStateContext.Provider>
   )
 }
@@ -56,14 +53,6 @@ function useAppState() {
     throw new Error('useAppState must be used within the AppProvider')
   }
   return context
-}
-
-function useAppDispatch() {
-  const context = React.useContext(AppDispatchContext);
-  if (!context) {
-    throw new Error('useAppDispatch must be used within the AppProvider');
-  }
-  return context;
 }
 
 function Grid() {
@@ -104,9 +93,8 @@ function Cell({row, column}) {
 Cell = React.memo(Cell)
 
 function DogNameInput() {
-  const state = useAppState();
-  const dispatch = useAppDispatch();
-  const {dogName} = state;
+  const [state, dispatch] = useAppState()
+  const {dogName} = state
 
   function handleChange(event) {
     const newDogName = event.target.value
