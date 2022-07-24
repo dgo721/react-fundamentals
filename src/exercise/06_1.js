@@ -10,9 +10,8 @@ import {
   updateGridCellState,
 } from '../utils'
 
-const AppStateContext = React.createContext();
-const AppDispatchContext = React.createContext();
-const DogContext = React.createContext();
+const AppStateContext = React.createContext()
+const AppDispatchContext = React.createContext()
 
 const initialGrid = Array.from({length: 100}, () =>
   Array.from({length: 100}, () => Math.random() * 100),
@@ -20,6 +19,11 @@ const initialGrid = Array.from({length: 100}, () =>
 
 function appReducer(state, action) {
   switch (action.type) {
+    // we're no longer managing the dogName state in our reducer
+    // 💣 remove this case
+    /* case 'TYPED_IN_DOG_INPUT': {
+      return {...state, dogName: action.dogName}
+    } */
     case 'UPDATE_GRID_CELL': {
       return {...state, grid: updateGridCellState(state.grid, action)}
     }
@@ -34,6 +38,8 @@ function appReducer(state, action) {
 
 function AppProvider({children}) {
   const [state, dispatch] = React.useReducer(appReducer, {
+    // 💣 remove the dogName state because we're no longer managing that
+    // dogName: '',
     grid: initialGrid,
   })
   return (
@@ -61,31 +67,6 @@ function useAppDispatch() {
   return context
 }
 
-function dogReducer(state, action) {
-  switch (action.type) {
-    case 'TYPED_IN_DOG_INPUT': {
-      return {...state, dogName: action.dogName};
-    }
-    default: {
-      new Error(`Unhandled action type: ${action.type}`);
-    }
-  }
-}
-
-function DogProvider(props) {
-  const [state, dispatch] = React.useReducer(dogReducer, {dogName: ''});
-  const value = [state, dispatch];
-  return <DogContext.Provider value={value} {...props} />;
-}
-
-function useDogState() {
-  const context = React.useContext(DogContext);
-  if (!context) {
-    throw new Error('useDogState must be used within the DogStateProvider');
-  }
-  return context;
-}
-
 function Grid() {
   const dispatch = useAppDispatch()
   const [rows, setRows] = useDebouncedState(50)
@@ -104,21 +85,11 @@ function Grid() {
 }
 Grid = React.memo(Grid)
 
-function withStateSlice(Comp, slice) {
-  const MemoComp = React.memo(Comp);
-  function Wrapper(props, ref) {
-    const state = useAppState();
-    return <MemoComp ref={ref} state={slice(state, props)} {...props} />
-  }
-
-  Wrapper.displayName = `withStateSlice(${Comp.displayName || Comp.name})`;
-  return React.memo(React.forwardRef(Wrapper));
-}
-
-function Cell({state: cell, row, column}) {
-  const dispatch = useAppDispatch();
-  const handleClick = () => dispatch({type: 'UPDATE_GRID_CELL', row, column});
-  
+function Cell({row, column}) {
+  const state = useAppState()
+  const cell = state.grid[row][column]
+  const dispatch = useAppDispatch()
+  const handleClick = () => dispatch({type: 'UPDATE_GRID_CELL', row, column})
   return (
     <button
       className="cell"
@@ -130,19 +101,23 @@ function Cell({state: cell, row, column}) {
     >
       {Math.floor(cell)}
     </button>
-  );
+  )
 }
-Cell = withStateSlice(Cell, (state, {row, column}) => state.grid[row][column]);
+Cell = React.memo(Cell)
 
 function DogNameInput() {
   // 🐨 replace the useAppState and useAppDispatch with a normal useState here
   // to manage the dogName locally within this component
-  const [state, dispatch] = useDogState();
-  const {dogName} = state;
+  /* const state = useAppState()
+  const dispatch = useAppDispatch()
+  const {dogName} = state */
+  const [dogName, setDogName] = React.useState('');
 
   function handleChange(event) {
-    const newDogName = event.target.value;
-    dispatch({type: 'TYPED_IN_DOG_INPUT', dogName: newDogName});
+    const newDogName = event.target.value
+    // 🐨 change this to call your state setter that you get from useState
+    // dispatch({type: 'TYPED_IN_DOG_INPUT', dogName: })
+    setDogName(newDogName);
   }
 
   return (
@@ -167,14 +142,12 @@ function App() {
   return (
     <div className="grid-app">
       <button onClick={forceRerender}>force rerender</button>
-      <div>
-        <DogProvider>
+      <AppProvider>
+        <div>
           <DogNameInput />
-        </DogProvider>
-        <AppProvider>
           <Grid />
-        </AppProvider>
-      </div>
+        </div>
+      </AppProvider>
     </div>
   )
 }
